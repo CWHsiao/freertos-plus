@@ -30,7 +30,7 @@ void processdir(DIR * dirp, const char * curpath, FILE * outfile, const char * p
     struct dirent * ent;
     DIR * rec_dirp;
     uint32_t cur_hash = hash_djb2((const uint8_t *) curpath, hash_init);
-    uint32_t size, w, hash;
+    uint32_t data_size, fname_size, w, hash;
     uint8_t b;
     FILE * infile;
 
@@ -64,17 +64,27 @@ void processdir(DIR * dirp, const char * curpath, FILE * outfile, const char * p
             b = (hash >> 16) & 0xff; fwrite(&b, 1, 1, outfile);
             b = (hash >> 24) & 0xff; fwrite(&b, 1, 1, outfile);
             fseek(infile, 0, SEEK_END);
-            size = ftell(infile);
+            data_size = ftell(infile);
             fseek(infile, 0, SEEK_SET);
-            b = (size >>  0) & 0xff; fwrite(&b, 1, 1, outfile);
-            b = (size >>  8) & 0xff; fwrite(&b, 1, 1, outfile);
-            b = (size >> 16) & 0xff; fwrite(&b, 1, 1, outfile);
-            b = (size >> 24) & 0xff; fwrite(&b, 1, 1, outfile);
-            while (size) {
-                w = size > 16 * 1024 ? 16 * 1024 : size;
+            b = (data_size >>  0) & 0xff; fwrite(&b, 1, 1, outfile);
+            b = (data_size >>  8) & 0xff; fwrite(&b, 1, 1, outfile);
+            b = (data_size >> 16) & 0xff; fwrite(&b, 1, 1, outfile);
+            b = (data_size >> 24) & 0xff; fwrite(&b, 1, 1, outfile);
+            fname_size = (uint32_t)strlen(ent->d_name);
+            b = (fname_size >>  0) & 0xff; fwrite(&b, 1, 1, outfile);
+            b = (fname_size >>  8) & 0xff; fwrite(&b, 1, 1, outfile);
+            b = (fname_size >> 16) & 0xff; fwrite(&b, 1, 1, outfile);
+            b = (fname_size >> 24) & 0xff; fwrite(&b, 1, 1, outfile);
+            while (data_size) {
+                w = data_size > 16 * 1024 ? 16 * 1024 : data_size;
                 fread(buf, 1, w, infile);
                 fwrite(buf, 1, w, outfile);
-                size -= w;
+                data_size -= w;
+            }
+            while (fname_size) {
+                w = fname_size > 16 * 1024 ? 16 * 1024 : fname_size;
+                fwrite(ent->d_name, 1, w, outfile);
+                fname_size -= w;
             }
             fclose(infile);
         }
