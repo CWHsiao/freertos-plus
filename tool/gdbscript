@@ -1,6 +1,16 @@
 file build/main.elf
 target remote :3333
 
-b main
+#break test_command
+tbreak fio.c:22
+commands
+set ptrbuf[0] = 't'
+set ptrbuf[1] = 'e'
+set ptrbuf[2] = 's'
+set ptrbuf[3] = 't'
+set ptrbuf[4] = '\0'
+set buf = ptrbuf
+return 5
+end
 
 c
